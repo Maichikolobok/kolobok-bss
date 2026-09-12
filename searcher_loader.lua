@@ -1,4 +1,7 @@
---// Kolobok Searcher Loader v1.0 (no key)
+--// Kolobok Searcher Loader v1.1
+local WEBHOOK = (...)
+if not WEBHOOK or WEBHOOK == "" then warn("Использование: loadstring(...)('WEBHOOK_URL')") return end
+
 local H = game:GetService("HttpService")
 
 local U = "https://smooth-seasnail-173025.upstash.io"
@@ -29,7 +32,7 @@ if not sr or not sr.result then warn("[Loader] СКРИПТ НЕ НАЙДЕН") 
 
 local fn = loadstring(sr.result)
 if fn then
-    fn()
+    fn(WEBHOOK)
 else
     warn("[Loader] ОШИБКА ЗАГРУЗКИ")
 end
