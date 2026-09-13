@@ -1,8 +1,9 @@
---// Kolobok Searcher Loader v2.0 — Config mode
-local CFG = (...)
-if type(CFG) == "string" then CFG = {webhook = CFG} end
-if not CFG or type(CFG) ~= "table" or not CFG.webhook or CFG.webhook == "" then
-    warn("[Searcher] loadstring(...)({webhook='URL', sprouts={'Rare','Epic'}, vicious_min_lvl=4})")
+--// Kolobok Searcher Loader v2.1 — Global Config
+local cfg = (getgenv and getgenv().CONFIG) or CONFIG or {}
+local webhook = (getgenv and getgenv().WEBHOOK_URL) or WEBHOOK_URL or ""
+
+if webhook == "" then
+    warn("[Searcher] WEBHOOK_URL не указан")
     return
 end
 
@@ -34,4 +35,4 @@ local sr = C({"GET", "script:searcher"})
 if not sr or not sr.result then warn("[Searcher] СКРИПТ НЕ НАЙДЕН") return end
 
 local fn = loadstring(sr.result)
-if fn then fn(CFG) else warn("[Searcher] ОШИБКА ЗАГРУЗКИ") end
+if fn then fn(cfg, webhook) else warn("[Searcher] ОШИБКА ЗАГРУЗКИ") end
