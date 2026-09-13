@@ -1,9 +1,12 @@
---// Kolobok Searcher Loader v1.1
-local WEBHOOK = (...)
-if not WEBHOOK or WEBHOOK == "" then warn("Использование: loadstring(...)('WEBHOOK_URL')") return end
+--// Kolobok Searcher Loader v2.0 — Config mode
+local CFG = (...)
+if type(CFG) == "string" then CFG = {webhook = CFG} end
+if not CFG or type(CFG) ~= "table" or not CFG.webhook or CFG.webhook == "" then
+    warn("[Searcher] loadstring(...)({webhook='URL', sprouts={'Rare','Epic'}, vicious_min_lvl=4})")
+    return
+end
 
 local H = game:GetService("HttpService")
-
 local U = "https://smooth-seasnail-173025.upstash.io"
 local T = "gQAAAAAAAqPhAAIgcDFiNTNiMWYwMjk4NGI0OTkxYjBlMmIyZjllOTg1NzhlYQ"
 
@@ -28,11 +31,7 @@ local function C(cmd)
 end
 
 local sr = C({"GET", "script:searcher"})
-if not sr or not sr.result then warn("[Loader] СКРИПТ НЕ НАЙДЕН") return end
+if not sr or not sr.result then warn("[Searcher] СКРИПТ НЕ НАЙДЕН") return end
 
 local fn = loadstring(sr.result)
-if fn then
-    fn(WEBHOOK)
-else
-    warn("[Loader] ОШИБКА ЗАГРУЗКИ")
-end
+if fn then fn(CFG) else warn("[Searcher] ОШИБКА ЗАГРУЗКИ") end
