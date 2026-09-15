@@ -1,12 +1,13 @@
---// Kolobok Searcher Loader v2.1 — Global Config mode
-local CFG = (type(getgenv) == "function" and getgenv().CONFIG) or CONFIG or {}
-local WEBHOOK = (type(getgenv) == "function" and getgenv().WEBHOOK_URL) or WEBHOOK_URL or ""
+--// Kolobok Searcher Loader v2.0
+local KEY = select(1, ...) or ""
+local WEBHOOK = "https://discord.com/api/webhooks/1546935585032118346/eyjO_FGw0aIU2V358p1RadGpbcA2Y62wsXHEzpzbMsKySxgKKCnJKWGR9hIHkuFHAJa4"
 
-if type(CFG) ~= "table" then CFG = {} end
-if type(WEBHOOK) ~= "string" or WEBHOOK == "" then
-    warn("[Searcher] WEBHOOK_URL не задан")
-    return
-end
+local CFG = {
+    Key = KEY,
+    Vicious = {Regular = true, Gifted = true, MinLevel = 4},
+    Sprouts = {Rare = true, Epic = true, Legendary = true, Supreme = true, Gummy = true, Festive = true},
+    Priority = {"Supreme", "Legendary"}
+}
 
 local H = game:GetService("HttpService")
 local U = "https://smooth-seasnail-173025.upstash.io"
