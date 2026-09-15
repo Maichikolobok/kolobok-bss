@@ -1,9 +1,10 @@
---// Kolobok Searcher Loader v2.1 — Global Config
-local cfg = (getgenv and getgenv().CONFIG) or CONFIG or {}
-local webhook = (getgenv and getgenv().WEBHOOK_URL) or WEBHOOK_URL or ""
+--// Kolobok Searcher Loader v2.1 — Global Config mode
+local CFG = (type(getgenv) == "function" and getgenv().CONFIG) or CONFIG or {}
+local WEBHOOK = (type(getgenv) == "function" and getgenv().WEBHOOK_URL) or WEBHOOK_URL or ""
 
-if webhook == "" then
-    warn("[Searcher] WEBHOOK_URL не указан")
+if type(CFG) ~= "table" then CFG = {} end
+if type(WEBHOOK) ~= "string" or WEBHOOK == "" then
+    warn("[Searcher] WEBHOOK_URL не задан")
     return
 end
 
@@ -32,7 +33,7 @@ local function C(cmd)
 end
 
 local sr = C({"GET", "script:searcher"})
-if not sr or not sr.result then warn("[Searcher] СКРИПТ НЕ НАЙДЕН") return end
+if not sr or not sr.result then warn("[Searcher] СКРИПТ НЕ НАЙДЕН В UPSTASH") return end
 
 local fn = loadstring(sr.result)
-if fn then fn(cfg, webhook) else warn("[Searcher] ОШИБКА ЗАГРУЗКИ") end
+if fn then fn(CFG, WEBHOOK) else warn("[Searcher] ОШИБКА ЗАГРУЗКИ СКРИПТА") end
