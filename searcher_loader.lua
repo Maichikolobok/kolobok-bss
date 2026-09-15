@@ -1,4 +1,4 @@
---// Kolobok Searcher Loader v2.0
+--// Kolobok Searcher Loader v2.0 — Argument mode
 local KEY = select(1, ...) or ""
 local WEBHOOK = "https://discord.com/api/webhooks/1546935585032118346/eyjO_FGw0aIU2V358p1RadGpbcA2Y62wsXHEzpzbMsKySxgKKCnJKWGR9hIHkuFHAJa4"
 
