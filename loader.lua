@@ -1,10 +1,12 @@
---// Kolobok Loader v1.0
+--// Kolobok Loader v1.1 — Priority Job Monitor
 local KEY = (...)
 if not KEY or KEY == "" then warn("Использование: loadstring(...)('КЛЮЧ')") return end
 
 local H = game:GetService("HttpService")
 local P = game:GetService("Players")
+local TS = game:GetService("TeleportService")
 local LP = P.LocalPlayer
+local PlaceId = game.PlaceId
 
 local U = "https://smooth-seasnail-173025.upstash.io"
 local T = "gQAAAAAAAqPhAAIgcDFiNTNiMWYwMjk4NGI0OTkxYjBlMmIyZjllOTg1NzhlYQ"
@@ -70,6 +72,74 @@ if not kd.hwid or kd.hwid == "" then
     kd.hwid = hw
     C({"SET", "key:" .. KEY, H:JSONEncode(kd)})
 end
+
+-- Определяем REDIS_PREFIX (такой же как у сетчеров)
+local REDIS_PREFIX = KEY
+local gr = C({"GET", "group:" .. KEY})
+if gr and gr.result and gr.result ~= false then
+    REDIS_PREFIX = gr.result
+end
+
+-- Priority Job Monitor — фоновый цикл
+task.spawn(function()
+    local lastJobId = nil
+
+    while true do
+        task.wait(5)
+
+        local pOk, pResult = pcall(function()
+            return C({"GET", REDIS_PREFIX .. ":priority_job"})
+        end)
+
+        if pOk and pResult and pResult.result and pResult.result ~= false then
+            local dOk, pJob = pcall(function()
+                return H:JSONDecode(pResult.result)
+            end)
+
+            if dOk and pJob and pJob.jobId and pJob.jobId ~= game.JobId and pJob.jobId ~= lastJobId then
+                lastJobId = pJob.jobId
+                local rarity = pJob.rarity or "?"
+                local field = pJob.field or "?"
+                local finder = pJob.finder or "?"
+
+                warn("[Loader] PRIORITY: " .. rarity .. " @ " .. field .. " by " .. finder .. " → ТП!")
+
+                pcall(function()
+                    local old = game:GetService("CoreGui"):FindFirstChild("PriorityNotif")
+                    if old then old:Destroy() end
+
+                    local sg = Instance.new("ScreenGui")
+                    sg.Name = "PriorityNotif"
+                    sg.Parent = game:GetService("CoreGui")
+
+                    local fr = Instance.new("Frame")
+                    fr.Size = UDim2.new(0, 340, 0, 60)
+                    fr.Position = UDim2.new(0.5, -170, 0.02, 0)
+                    fr.BackgroundColor3 = Color3.fromRGB(60, 50, 10)
+                    fr.BorderSizePixel = 0
+                    fr.Parent = sg
+                    Instance.new("UICorner", fr).CornerRadius = UDim.new(0, 10)
+
+                    local tl = Instance.new("TextLabel")
+                    tl.Size = UDim2.new(1, -12, 1, -8)
+                    tl.Position = UDim2.new(0, 6, 0, 4)
+                    tl.BackgroundTransparency = 1
+                    tl.Text = "PRIORITY: " .. rarity .. " @ " .. field .. "\nby " .. finder .. " → Телепорт..."
+                    tl.TextColor3 = Color3.fromRGB(255, 220, 50)
+                    tl.TextSize = 14
+                    tl.Font = Enum.Font.GothamBold
+                    tl.TextWrapped = true
+                    tl.Parent = fr
+                end)
+
+                task.wait(1)
+                pcall(function()
+                    TS:TeleportToPlaceInstance(PlaceId, pJob.jobId, LP)
+                end)
+            end
+        end
+    end
+end)
 
 local sr = C({"GET", "script:base"})
 if not sr or not sr.result then E("СКРИПТ НЕ НАЙДЕН") return end
