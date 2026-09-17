@@ -1,11 +1,11 @@
---// Kolobok Loader v1.1 — Priority Job Monitor
+--// Kolobok Loader v1.2 — Urgent priority for Legendary/Supreme
 local KEY = (...)
 if not KEY or KEY == "" then warn("Использование: loadstring(...)('КЛЮЧ')") return end
 
 local H = game:GetService("HttpService")
 local P = game:GetService("Players")
-local TS = game:GetService("TeleportService")
 local LP = P.LocalPlayer
+local TS = game:GetService("TeleportService")
 local PlaceId = game.PlaceId
 
 local U = "https://smooth-seasnail-173025.upstash.io"
@@ -51,6 +51,7 @@ local function E(m)
     warn("[Loader] " .. m)
 end
 
+-- Проверка ключа
 local kr = C({"GET", "key:" .. KEY})
 if not kr or not kr.result then E("КЛЮЧ НЕ НАЙДЕН") return end
 
@@ -73,14 +74,91 @@ if not kd.hwid or kd.hwid == "" then
     C({"SET", "key:" .. KEY, H:JSONEncode(kd)})
 end
 
--- Определяем REDIS_PREFIX (такой же как у сетчеров)
+-- Определение REDIS_PREFIX
 local REDIS_PREFIX = KEY
 local gr = C({"GET", "group:" .. KEY})
 if gr and gr.result and gr.result ~= false then
     REDIS_PREFIX = gr.result
 end
 
--- Priority Job Monitor — фоновый цикл
+-- ========== PRIORITY MONITOR ==========
+local function showNotification(pJob)
+    pcall(function()
+        local old = game:GetService("CoreGui"):FindFirstChild("PriorityNotif")
+        if old then old:Destroy() end
+    end)
+
+    local isUrgent = pJob.urgent == true
+
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "PriorityNotif"
+    sg.ResetOnSpawn = false
+    sg.Parent = game:GetService("CoreGui")
+
+    local f = Instance.new("Frame")
+    f.Size = UDim2.new(0, 380, 0, 90)
+    f.Position = UDim2.new(0.5, -190, 0.15, 0)
+    f.BorderSizePixel = 0
+    f.Parent = sg
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 12)
+
+    if isUrgent then
+        f.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
+    else
+        f.BackgroundColor3 = Color3.fromRGB(30, 80, 160)
+    end
+
+    local rarityText = pJob.rarity or "?"
+    local fieldText = pJob.field or "?"
+    local finderText = pJob.finder or "?"
+
+    local tl = Instance.new("TextLabel")
+    tl.Size = UDim2.new(1, -16, 0, 30)
+    tl.Position = UDim2.new(0, 8, 0, 8)
+    tl.BackgroundTransparency = 1
+    tl.TextColor3 = Color3.new(1, 1, 1)
+    tl.TextSize = 18
+    tl.Font = Enum.Font.GothamBold
+    tl.TextXAlignment = Enum.TextXAlignment.Left
+    tl.Parent = f
+
+    if isUrgent then
+        tl.Text = "URGENT: " .. rarityText
+    else
+        tl.Text = "НАЙДЕНО: " .. rarityText
+    end
+
+    local tl2 = Instance.new("TextLabel")
+    tl2.Size = UDim2.new(1, -16, 0, 22)
+    tl2.Position = UDim2.new(0, 8, 0, 38)
+    tl2.BackgroundTransparency = 1
+    tl2.Text = "Поле: " .. fieldText .. " | Нашёл: " .. finderText
+    tl2.TextColor3 = Color3.fromRGB(220, 220, 220)
+    tl2.TextSize = 13
+    tl2.Font = Enum.Font.Gotham
+    tl2.TextXAlignment = Enum.TextXAlignment.Left
+    tl2.Parent = f
+
+    local tl3 = Instance.new("TextLabel")
+    tl3.Size = UDim2.new(1, -16, 0, 18)
+    tl3.Position = UDim2.new(0, 8, 0, 60)
+    tl3.BackgroundTransparency = 1
+    tl3.TextSize = 12
+    tl3.Font = Enum.Font.Code
+    tl3.TextXAlignment = Enum.TextXAlignment.Left
+    tl3.Parent = f
+
+    if isUrgent then
+        tl3.Text = "БРОСАЮ ВСЁ → ТЕЛЕПОРТ СЕЙЧАС!"
+        tl3.TextColor3 = Color3.fromRGB(255, 200, 80)
+    else
+        tl3.Text = "Телепорт через 10 сек..."
+        tl3.TextColor3 = Color3.fromRGB(180, 220, 255)
+    end
+
+    return sg, tl3
+end
+
 task.spawn(function()
     local lastJobId = nil
 
@@ -98,41 +176,21 @@ task.spawn(function()
 
             if dOk and pJob and pJob.jobId and pJob.jobId ~= game.JobId and pJob.jobId ~= lastJobId then
                 lastJobId = pJob.jobId
-                local rarity = pJob.rarity or "?"
-                local field = pJob.field or "?"
-                local finder = pJob.finder or "?"
+                local isUrgent = pJob.urgent == true
 
-                warn("[Loader] PRIORITY: " .. rarity .. " @ " .. field .. " by " .. finder .. " → ТП!")
+                local notifGui, countdownLabel = showNotification(pJob)
 
-                pcall(function()
-                    local old = game:GetService("CoreGui"):FindFirstChild("PriorityNotif")
-                    if old then old:Destroy() end
+                if isUrgent then
+                    task.wait(1)
+                else
+                    for i = 10, 1, -1 do
+                        if countdownLabel then
+                            countdownLabel.Text = "Телепорт через " .. i .. " сек..."
+                        end
+                        task.wait(1)
+                    end
+                end
 
-                    local sg = Instance.new("ScreenGui")
-                    sg.Name = "PriorityNotif"
-                    sg.Parent = game:GetService("CoreGui")
-
-                    local fr = Instance.new("Frame")
-                    fr.Size = UDim2.new(0, 340, 0, 60)
-                    fr.Position = UDim2.new(0.5, -170, 0.02, 0)
-                    fr.BackgroundColor3 = Color3.fromRGB(60, 50, 10)
-                    fr.BorderSizePixel = 0
-                    fr.Parent = sg
-                    Instance.new("UICorner", fr).CornerRadius = UDim.new(0, 10)
-
-                    local tl = Instance.new("TextLabel")
-                    tl.Size = UDim2.new(1, -12, 1, -8)
-                    tl.Position = UDim2.new(0, 6, 0, 4)
-                    tl.BackgroundTransparency = 1
-                    tl.Text = "PRIORITY: " .. rarity .. " @ " .. field .. "\nby " .. finder .. " → Телепорт..."
-                    tl.TextColor3 = Color3.fromRGB(255, 220, 50)
-                    tl.TextSize = 14
-                    tl.Font = Enum.Font.GothamBold
-                    tl.TextWrapped = true
-                    tl.Parent = fr
-                end)
-
-                task.wait(1)
                 pcall(function()
                     TS:TeleportToPlaceInstance(PlaceId, pJob.jobId, LP)
                 end)
@@ -141,6 +199,7 @@ task.spawn(function()
     end
 end)
 
+-- Загрузка основного скрипта
 local sr = C({"GET", "script:base"})
 if not sr or not sr.result then E("СКРИПТ НЕ НАЙДЕН") return end
 
